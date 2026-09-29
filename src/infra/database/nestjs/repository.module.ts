@@ -7,7 +7,19 @@ import {
   LedgerRepository,
   TransactionEntity,
   TransactionRepository,
+  TransactionStatusEntity,
+  TransactionStatusRepository,
+  TransactionTypeEntity,
+  TransactionTypeRepository,
 } from '../typeorm/models';
+
+const repositories = [
+  AccountRepository,
+  TransactionTypeRepository,
+  TransactionStatusRepository,
+  TransactionRepository,
+  LedgerRepository,
+];
 
 @Module({})
 export class RepositoryModule {
@@ -17,12 +29,14 @@ export class RepositoryModule {
       imports: [
         TypeOrmModule.forFeature([
           AccountEntity,
+          TransactionTypeEntity,
+          TransactionStatusEntity,
           TransactionEntity,
           LedgerEntity,
         ]),
       ],
-      providers: [AccountRepository, TransactionRepository, LedgerRepository],
-      exports: [AccountRepository, TransactionRepository, LedgerRepository],
+      providers: repositories,
+      exports: repositories,
     };
   }
 }

@@ -7,7 +7,7 @@ NestJS + TypeORM + PostgreSQL. Node 24 (`nvm use`).
 ```bash
 cp .env.example .env
 npm install
-npm run db:up        # postgres:17 in docker (container: cdx-postgres)
+npm run db:up        # postgres:18 in docker (container: cdx-postgres)
 npm run start:dev
 ```
 
