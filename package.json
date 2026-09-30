@@ -24,7 +24,8 @@
     "typeorm": "typeorm-ts-node-commonjs",
     "typeorm:create": "typeorm migration:create ./src/infra/database/typeorm/migration/$npm_config_name",
     "typeorm:migrate": "npm run typeorm -- migration:run --data-source src/infra/database/typeorm/dataSourceScript.ts",
-    "typeorm:rollback": "npm run typeorm -- migration:revert --data-source src/infra/database/typeorm/dataSourceScript.ts"
+    "typeorm:rollback": "npm run typeorm -- migration:revert --data-source src/infra/database/typeorm/dataSourceScript.ts",
+    "setup": "sh scripts/setup.sh"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",

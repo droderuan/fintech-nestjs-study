@@ -5,11 +5,28 @@ NestJS + TypeORM + PostgreSQL. Node 24 (`nvm use`).
 ## Setup
 
 ```bash
-cp .env.example .env
-npm install
-npm run db:up        # postgres:17 in docker (container: cdx-postgres)
+npm run setup        # or: ./scripts/setup.sh
 npm run start:dev
 ```
+
+`setup` does the following:
+
+1. Creates `.env` from `.env.example` if it's missing.
+2. Runs `npm install`.
+3. Starts postgres:18 in Docker (container `cdx-postgres`) and waits until it's healthy.
+4. Runs the migrations.
+5. Seeds the database.
+
+## Docker image
+
+The API image connects to the `postgres` container over the compose network. Run `npm run setup` first so the database is migrated and seeded.
+
+```bash
+docker build -t cdx-api .
+docker run --rm -p 3000:3000 --network cdx_interview_default --env-file .env -e DB_HOST=postgres cdx-api
+```
+
+`cdx_interview_default` is the network Compose creates for this folder. `docker network ls` shows it if the folder has a different name.
 
 ## Structure
 

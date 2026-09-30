@@ -7,11 +7,16 @@ Interview project: a small accounts/transactions API with a double-entry ledger.
 ## Commands
 
 ```bash
-cp .env.example .env && npm install
+npm run setup                 # fresh clone: .env, npm install, postgres up, migrate, seed (scripts/setup.sh)
+npm run start:dev             # watch mode, port from PORT (default 3000)
+
 npm run db:up                 # postgres:18 in docker (container: cdx-postgres)
 npm run typeorm:migrate       # run migrations (uses dataSourceScript.ts)
 npm run db:seed               # idempotent seed: transaction types + system account
-npm run start:dev             # watch mode, port from PORT (default 3000)
+
+# API image; joins the compose network to reach postgres
+docker build -t cdx-api .
+docker run --rm -p 3000:3000 --network cdx_interview_default --env-file .env -e DB_HOST=postgres cdx-api
 
 npm run lint                  # oxlint src/ test/
 npm run format                # prettier
