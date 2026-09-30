@@ -1,5 +1,4 @@
 import {
-  Check,
   Column,
   CreateDateColumn,
   Entity,
@@ -13,7 +12,6 @@ import { TransactionEntity } from '../transaction/entity';
 
 // Append-only: rows are never updated or deleted.
 @Entity('ledgers')
-@Check('CHK_ledgers_amount', `"amount" <> 0`)
 @Index('IDX_ledgers_account_id_created_at', ['accountId', 'createdAt'])
 @Index('IDX_ledgers_transaction_id', ['transactionId'])
 export class LedgerEntity {

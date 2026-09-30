@@ -1,5 +1,4 @@
 import {
-  Check,
   Column,
   CreateDateColumn,
   DeleteDateColumn,
@@ -12,10 +11,10 @@ import {
 export enum DocumentType {
   CPF = 'CPF',
   PASSPORT = 'PASSPORT',
+  CNPJ = 'CNPJ',
 }
 
 @Entity('accounts')
-@Check('CHK_accounts_document_type', `"document_type" IN ('CPF', 'PASSPORT')`)
 @Index('UQ_accounts_document_type_document', ['documentType', 'document'], {
   unique: true,
   where: '"deleted_at" IS NULL',
@@ -27,7 +26,12 @@ export class AccountEntity {
   @Column({ length: 32 })
   document: string;
 
-  @Column({ name: 'document_type', type: 'varchar', length: 16 })
+  @Column({
+    name: 'document_type',
+    type: 'enum',
+    enum: DocumentType,
+    enumName: 'document_type',
+  })
   documentType: DocumentType;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })

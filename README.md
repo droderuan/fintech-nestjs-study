@@ -7,7 +7,7 @@ NestJS + TypeORM + PostgreSQL. Node 24 (`nvm use`).
 ```bash
 cp .env.example .env
 npm install
-npm run db:up        # postgres:18 in docker (container: cdx-postgres)
+npm run db:up        # postgres:17 in docker (container: cdx-postgres)
 npm run start:dev
 ```
 
@@ -39,3 +39,10 @@ npm run typeorm:generate --name=<name>   # diff from entities
 npm run typeorm:migrate
 npm run typeorm:rollback
 ```
+## Notes
+
+The document does not specify if the transactions and the amounts are only from card transactions, using available credit, or if the customer does have a wallet storing debit amount and credit card amounts.
+
+I will assume that the customer does have a amount representing the available amount to transacting.
+
+For simplicity, I will assume that the system will be *used for debit and credit*, but the customer will have only *one wallet*.

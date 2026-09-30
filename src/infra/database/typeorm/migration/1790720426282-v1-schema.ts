@@ -2,7 +2,6 @@ import {
   MigrationInterface,
   QueryRunner,
   Table,
-  TableCheck,
   TableColumnOptions,
   TableForeignKey,
   TableIndex,
@@ -40,25 +39,6 @@ const amount: TableColumnOptions = {
   scale: 2,
 };
 
-const lookupTable = (name: string) =>
-  new Table({
-    name,
-    columns: [
-      { name: 'id', type: 'smallint', isPrimary: true },
-      { name: 'code', type: 'varchar', length: '32', isUnique: true },
-      { name: 'display_code', type: 'varchar', length: '32' },
-      {
-        name: 'description',
-        type: 'varchar',
-        length: '128',
-        isNullable: true,
-      },
-      createdAt,
-      updatedAt,
-      deletedAt,
-    ],
-  });
-
 const restrict = (
   columnName: string,
   referencedTableName: string,
@@ -81,16 +61,15 @@ export class V1Schema1790720426282 implements MigrationInterface {
         columns: [
           uuidPrimaryKey,
           { name: 'document', type: 'varchar', length: '32' },
-          { name: 'document_type', type: 'varchar', length: '16' },
+          {
+            name: 'document_type',
+            type: 'enum',
+            enum: ['CPF', 'PASSPORT', 'CNPJ'],
+            enumName: 'document_type',
+          },
           createdAt,
           updatedAt,
           deletedAt,
-        ],
-        checks: [
-          new TableCheck({
-            name: 'CHK_accounts_document_type',
-            expression: `"document_type" IN ('CPF', 'PASSPORT')`,
-          }),
         ],
         indices: [
           new TableIndex({
@@ -103,8 +82,48 @@ export class V1Schema1790720426282 implements MigrationInterface {
       }),
     );
 
-    await queryRunner.createTable(lookupTable('transaction_types'));
-    await queryRunner.createTable(lookupTable('transaction_statuses'));
+    await queryRunner.createTable(
+      new Table({
+        name: 'system_accounts',
+        columns: [
+          uuidPrimaryKey,
+          { name: 'account_id', type: 'uuid' },
+          { name: 'enabled', type: 'boolean', default: true },
+          createdAt,
+          updatedAt,
+          deletedAt,
+        ],
+        indices: [
+          new TableIndex({
+            name: 'UQ_system_accounts_account_id',
+            columnNames: ['account_id'],
+            isUnique: true,
+            where: '"deleted_at" IS NULL',
+          }),
+        ],
+        foreignKeys: [restrict('account_id', 'accounts')],
+      }),
+    );
+
+    await queryRunner.createTable(
+      new Table({
+        name: 'transaction_types',
+        columns: [
+          { name: 'id', type: 'smallint', isPrimary: true },
+          { name: 'code', type: 'varchar', length: '32', isUnique: true },
+          { name: 'display_code', type: 'varchar', length: '32' },
+          {
+            name: 'description',
+            type: 'varchar',
+            length: '128',
+            isNullable: true,
+          },
+          createdAt,
+          updatedAt,
+          deletedAt,
+        ],
+      }),
+    );
 
     await queryRunner.createTable(
       new Table({
@@ -113,16 +132,16 @@ export class V1Schema1790720426282 implements MigrationInterface {
           uuidPrimaryKey,
           { name: 'account_id', type: 'uuid' },
           { name: 'transaction_type_id', type: 'smallint' },
-          { name: 'transaction_status_id', type: 'smallint' },
+          {
+            name: 'status',
+            type: 'enum',
+            enum: ['PENDING', 'COMPLETED', 'CANCELED'],
+            enumName: 'transaction_status',
+            default: `'PENDING'`,
+          },
           amount,
           createdAt,
           updatedAt,
-        ],
-        checks: [
-          new TableCheck({
-            name: 'CHK_transactions_amount',
-            expression: '"amount" <> 0',
-          }),
         ],
         indices: [
           new TableIndex({
@@ -133,7 +152,6 @@ export class V1Schema1790720426282 implements MigrationInterface {
         foreignKeys: [
           restrict('account_id', 'accounts'),
           restrict('transaction_type_id', 'transaction_types'),
-          restrict('transaction_status_id', 'transaction_statuses'),
         ],
       }),
     );
@@ -147,12 +165,6 @@ export class V1Schema1790720426282 implements MigrationInterface {
           { name: 'transaction_id', type: 'uuid' },
           amount,
           createdAt,
-        ],
-        checks: [
-          new TableCheck({
-            name: 'CHK_ledgers_amount',
-            expression: '"amount" <> 0',
-          }),
         ],
         indices: [
           new TableIndex({
@@ -175,8 +187,11 @@ export class V1Schema1790720426282 implements MigrationInterface {
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.dropTable('ledgers', true, true, true);
     await queryRunner.dropTable('transactions', true, true, true);
-    await queryRunner.dropTable('transaction_statuses', true, true, true);
     await queryRunner.dropTable('transaction_types', true, true, true);
+    await queryRunner.dropTable('system_accounts', true, true, true);
     await queryRunner.dropTable('accounts', true, true, true);
+    await queryRunner.query(
+      'DROP TYPE IF EXISTS "transaction_status", "document_type"',
+    );
   }
 }

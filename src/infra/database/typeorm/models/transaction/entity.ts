@@ -1,5 +1,4 @@
 import {
-  Check,
   Column,
   CreateDateColumn,
   Entity,
@@ -11,10 +10,14 @@ import {
 } from 'typeorm';
 import { AccountEntity } from '../account/entity';
 import { TransactionTypeEntity } from '../transactionType/entity';
-import { TransactionStatusEntity } from '../transactionStatus/entity';
+
+export enum TransactionStatus {
+  PENDING = 'PENDING',
+  COMPLETED = 'COMPLETED',
+  CANCELED = 'CANCELED',
+}
 
 @Entity('transactions')
-@Check('CHK_transactions_amount', `"amount" <> 0`)
 @Index('IDX_transactions_account_id_created_at', ['accountId', 'createdAt'])
 export class TransactionEntity {
   @PrimaryColumn({ type: 'uuid', default: () => 'uuidv7()' })
@@ -26,8 +29,13 @@ export class TransactionEntity {
   @Column({ name: 'transaction_type_id', type: 'smallint' })
   transactionTypeId: number;
 
-  @Column({ name: 'transaction_status_id', type: 'smallint' })
-  transactionStatusId: number;
+  @Column({
+    type: 'enum',
+    enum: TransactionStatus,
+    enumName: 'transaction_status',
+    default: TransactionStatus.PENDING,
+  })
+  status: TransactionStatus;
 
   // numeric comes back from pg as string to avoid float precision loss.
   @Column({ type: 'numeric', precision: 15, scale: 2 })
@@ -46,8 +54,4 @@ export class TransactionEntity {
   @ManyToOne(() => TransactionTypeEntity, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'transaction_type_id' })
   transactionType?: TransactionTypeEntity;
-
-  @ManyToOne(() => TransactionStatusEntity, { onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'transaction_status_id' })
-  transactionStatus?: TransactionStatusEntity;
 }
