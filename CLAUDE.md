@@ -42,6 +42,13 @@ Two layers under `src/`:
 - `infra/` — framework and persistence. `infra/app/app.module.ts` is the root module and registers a global `ValidationPipe` (`whitelist`, `forbidNonWhitelisted`, `transform`), so every DTO must declare all accepted fields with class-validator decorators.
 - `domains/<name>/` — feature modules (controller, service, `dto/`). Domains do not own entities or repositories; they import them from `infra/database/typeorm/models`.
 
+### API docs (Swagger)
+
+- Swagger UI is served at `/docs`; `infra/app/swagger.ts` builds the document.
+- DTO schemas come from the `@nestjs/swagger` CLI plugin (`nest-cli.json`, `introspectComments`). It reads property types, class-validator rules and JSDoc comments (`/** description @example x */`), so document DTO fields with JSDoc instead of `@ApiProperty`. Use explicit decorators only where the plugin can't infer something, e.g. `@ApiPropertyOptional` for a field that has a default value.
+- Controllers declare `@ApiTags`, `@ApiOperation` and one `@Api*Response` per status code they can return. `AppController` (`GET /`) is excluded from the docs.
+- Vitest does not run the plugin, so `swagger.spec.ts` can check paths and response codes but not DTO schemas.
+
 ### Persistence wiring
 
 - `typeorm/dataSource.ts` builds options from env. `synchronize: false` (schema changes only via migrations) and `parseInt8: true` so `bigint` columns come back as JS numbers.

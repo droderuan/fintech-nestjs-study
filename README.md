@@ -17,6 +17,10 @@ npm run start:dev
 4. Runs the migrations.
 5. Seeds the database.
 
+## API docs
+
+Swagger UI is served at `http://localhost:3000/docs`
+
 ## Docker image
 
 The API image connects to the `postgres` container over the compose network. Run `npm run setup` first so the database is migrated and seeded.

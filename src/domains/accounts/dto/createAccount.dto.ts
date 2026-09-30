@@ -6,9 +6,14 @@ import {
   Matches,
   MaxLength,
 } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { DocumentType } from '../../../infra/database/typeorm/models';
 
 export class CreateAccountDto {
+  /**
+   * Document number, letters and digits only.
+   * @example 12345678900
+   */
   @IsString()
   @IsNotEmpty()
   @MaxLength(32)
@@ -17,6 +22,11 @@ export class CreateAccountDto {
   })
   document: string;
 
+  /**
+   * Defaults to CPF.
+   * @example CPF
+   */
+  @ApiPropertyOptional()
   @IsOptional()
   @IsEnum(DocumentType)
   document_type: DocumentType = DocumentType.CPF;
