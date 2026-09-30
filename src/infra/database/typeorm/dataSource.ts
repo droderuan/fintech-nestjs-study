@@ -35,6 +35,8 @@ export function buildDataSourceOptions(
     password: config.password,
     database: config.database,
     synchronize: false,
+    // Return bigint (amounts in cents) as JS numbers instead of strings.
+    parseInt8: true,
     logging: config.logging ?? false,
     entities: [join(__dirname, 'models/**/entity.{ts,js}')],
     migrations: [join(__dirname, 'migration/*.{ts,js}')],

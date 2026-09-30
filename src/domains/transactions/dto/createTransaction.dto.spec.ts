@@ -5,7 +5,7 @@ import { CreateTransactionDto } from './createTransaction.dto';
 const valid = {
   account_id: '0195f1a2-0000-7000-8000-000000000001',
   type: 'credit_voucher',
-  amount: 123.45,
+  amount: 12345,
 };
 
 const errorsFor = async (body: object) =>
@@ -18,6 +18,12 @@ describe('CreateTransactionDto', () => {
     expect(await errorsFor(valid)).toHaveLength(0);
   });
 
+  it('should accept the largest amount in cents', async () => {
+    expect(
+      await errorsFor({ ...valid, amount: 999_999_999_999_999 }),
+    ).toHaveLength(0);
+  });
+
   it.each([
     ['account_id', 1],
     ['account_id', 'not-a-uuid'],
@@ -26,9 +32,9 @@ describe('CreateTransactionDto', () => {
     ['type', 'unknown'],
     ['amount', 0],
     ['amount', -10],
-    ['amount', 1.234],
-    ['amount', '123.45'],
-    ['amount', 10_000_000_000_000],
+    ['amount', 123.45],
+    ['amount', '12345'],
+    ['amount', 1_000_000_000_000_000],
   ])('should reject %s = %j', async (field, value) => {
     expect(await errorsFor({ ...valid, [field]: value })).toEqual([field]);
   });

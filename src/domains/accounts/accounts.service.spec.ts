@@ -3,6 +3,7 @@ import {
   AccountEntity,
   AccountRepository,
   DocumentType,
+  LedgerRepository,
 } from '../../infra/database/typeorm/models';
 import { AccountsService } from './accounts.service';
 
@@ -18,6 +19,7 @@ describe('AccountsService', () => {
     findByDocument: ReturnType<typeof vi.fn>;
     create: ReturnType<typeof vi.fn>;
   };
+  let ledgerRepository: { getBalance: ReturnType<typeof vi.fn> };
   let service: AccountsService;
 
   beforeEach(() => {
@@ -26,8 +28,10 @@ describe('AccountsService', () => {
       findByDocument: vi.fn(),
       create: vi.fn(),
     };
+    ledgerRepository = { getBalance: vi.fn().mockResolvedValue(7000) };
     service = new AccountsService(
       accountRepository as unknown as AccountRepository,
+      ledgerRepository as unknown as LedgerRepository,
     );
   });
 
@@ -62,10 +66,14 @@ describe('AccountsService', () => {
   });
 
   describe('findById', () => {
-    it('should return the account', async () => {
+    it('should return the account with its ledger balance as amount', async () => {
       accountRepository.findById.mockResolvedValue(account);
 
-      await expect(service.findById(account.id)).resolves.toBe(account);
+      await expect(service.findById(account.id)).resolves.toEqual({
+        account,
+        amount: 7000,
+      });
+      expect(ledgerRepository.getBalance).toHaveBeenCalledWith(account.id);
     });
 
     it('should throw when the account does not exist', async () => {
@@ -74,6 +82,7 @@ describe('AccountsService', () => {
       await expect(service.findById(account.id)).rejects.toThrow(
         NotFoundException,
       );
+      expect(ledgerRepository.getBalance).not.toHaveBeenCalled();
     });
   });
 });

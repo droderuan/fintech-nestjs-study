@@ -32,11 +32,10 @@ const deletedAt: TableColumnOptions = {
   isNullable: true,
 };
 
+// Integer cents: 12345 = 123.45.
 const amount: TableColumnOptions = {
   name: 'amount',
-  type: 'numeric',
-  precision: 15,
-  scale: 2,
+  type: 'bigint',
 };
 
 const restrict = (

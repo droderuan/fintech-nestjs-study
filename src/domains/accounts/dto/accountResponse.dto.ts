@@ -7,12 +7,17 @@ export class AccountResponseDto {
   account_id: string;
   document: string;
   document_type: DocumentType;
+  amount: number;
 
-  static fromEntity(account: AccountEntity): AccountResponseDto {
+  static fromEntity(
+    account: AccountEntity,
+    amount: number,
+  ): AccountResponseDto {
     return {
       account_id: account.id,
       document: account.document,
       document_type: account.documentType,
+      amount,
     };
   }
 }

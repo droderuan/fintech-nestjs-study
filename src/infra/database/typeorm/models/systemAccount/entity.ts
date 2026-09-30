@@ -11,13 +11,7 @@ import {
 } from 'typeorm';
 import { AccountEntity } from '../account/entity';
 
-// Marks which account acts as the platform's counterparty in the
-// double-entry ledger. Its balance may go negative.
 @Entity('system_accounts')
-@Index('UQ_system_accounts_account_id', ['accountId'], {
-  unique: true,
-  where: '"deleted_at" IS NULL',
-})
 export class SystemAccountEntity {
   @PrimaryColumn({ type: 'uuid', default: () => 'uuidv7()' })
   id: string;

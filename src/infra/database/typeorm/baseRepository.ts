@@ -1,4 +1,4 @@
-import { Repository, DataSource, ObjectLiteral } from 'typeorm';
+import { Repository, DataSource, EntityManager, ObjectLiteral } from 'typeorm';
 
 export abstract class BaseRepository<T extends ObjectLiteral> {
   protected repository: Repository<T>;
@@ -8,5 +8,9 @@ export abstract class BaseRepository<T extends ObjectLiteral> {
     protected readonly entity: new () => T,
   ) {
     this.repository = this.dataSource.getRepository(entity);
+  }
+
+  protected repo(manager?: EntityManager): Repository<T> {
+    return manager ? manager.getRepository(this.entity) : this.repository;
   }
 }

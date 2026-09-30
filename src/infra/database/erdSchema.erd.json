@@ -710,19 +710,19 @@
         "id": "wo4-ck6DJk4aWp4G3GZ4X",
         "tableId": "ECYVZbN8f5GvQeSOmmiQk",
         "name": "amount",
-        "comment": "signed: purchase/withdraw negative, credit/deposit positive",
-        "dataType": "numeric(15,2)",
+        "comment": "integer cents, signed: purchase/withdraw negative, credit/deposit positive",
+        "dataType": "bigint",
         "default": "",
         "options": 8,
         "ui": {
           "keys": 0,
           "widthName": 60,
-          "widthComment": 317,
-          "widthDataType": 74,
+          "widthComment": 415,
+          "widthDataType": 60,
           "widthDefault": 60
         },
         "meta": {
-          "updateAt": 1790726997638,
+          "updateAt": 1790731761782,
           "createAt": 1790716819213
         }
       },
@@ -950,19 +950,19 @@
         "id": "nFwh77QfFDiwNaPjpGUhz",
         "tableId": "m6SpNVQv_hh8KqNI1_FIK",
         "name": "amount",
-        "comment": "signed; SUM per transaction_id = 0",
-        "dataType": "numeric(15,2)",
+        "comment": "integer cents, signed; SUM per transaction_id = 0",
+        "dataType": "bigint",
         "default": "",
         "options": 8,
         "ui": {
           "keys": 0,
           "widthName": 60,
-          "widthComment": 187,
-          "widthDataType": 74,
+          "widthComment": 275,
+          "widthDataType": 60,
           "widthDefault": 60
         },
         "meta": {
-          "updateAt": 1790726997638,
+          "updateAt": 1790731761782,
           "createAt": 1790719934824
         }
       },

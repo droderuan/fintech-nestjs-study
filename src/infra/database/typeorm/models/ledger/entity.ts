@@ -12,8 +12,6 @@ import { TransactionEntity } from '../transaction/entity';
 
 // Append-only: rows are never updated or deleted.
 @Entity('ledgers')
-@Index('IDX_ledgers_account_id_created_at', ['accountId', 'createdAt'])
-@Index('IDX_ledgers_transaction_id', ['transactionId'])
 export class LedgerEntity {
   @PrimaryColumn({ type: 'uuid', default: () => 'uuidv7()' })
   id: string;
@@ -24,9 +22,9 @@ export class LedgerEntity {
   @Column({ name: 'transaction_id', type: 'uuid' })
   transactionId: string;
 
-  // Signed: negative debits, positive credits.
-  @Column({ type: 'numeric', precision: 15, scale: 2 })
-  amount: string;
+  // Signed integer cents: negative debits, positive credits.
+  @Column({ type: 'bigint' })
+  amount: number;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;

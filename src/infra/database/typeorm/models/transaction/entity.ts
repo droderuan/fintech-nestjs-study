@@ -9,7 +9,10 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { AccountEntity } from '../account/entity';
-import { TransactionTypeEntity } from '../transactionType/entity';
+import {
+  TransactionType,
+  TransactionTypeEntity,
+} from '../transactionType/entity';
 
 export enum TransactionStatus {
   PENDING = 'PENDING',
@@ -17,8 +20,14 @@ export enum TransactionStatus {
   CANCELED = 'CANCELED',
 }
 
+// Purchases and withdrawals are registered with negative amounts.
+const DEBIT_TYPES = new Set<string>([
+  TransactionType.PURCHASE,
+  TransactionType.PURCHASE_WITH_INSTALLMENTS,
+  TransactionType.WITHDRAW,
+]);
+
 @Entity('transactions')
-@Index('IDX_transactions_account_id_created_at', ['accountId', 'createdAt'])
 export class TransactionEntity {
   @PrimaryColumn({ type: 'uuid', default: () => 'uuidv7()' })
   id: string;
@@ -37,9 +46,9 @@ export class TransactionEntity {
   })
   status: TransactionStatus;
 
-  // numeric comes back from pg as string to avoid float precision loss.
-  @Column({ type: 'numeric', precision: 15, scale: 2 })
-  amount: string;
+  // Signed integer cents: negative debits, positive credits.
+  @Column({ type: 'bigint' })
+  amount: number;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
@@ -54,4 +63,38 @@ export class TransactionEntity {
   @ManyToOne(() => TransactionTypeEntity, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'transaction_type_id' })
   transactionType?: TransactionTypeEntity;
+
+  // Builds a pending transaction, signing the amount (cents) by its type.
+  static open(params: {
+    accountId: string;
+    transactionType: TransactionTypeEntity;
+    amount: number;
+  }): TransactionEntity & { transactionType: TransactionTypeEntity } {
+    const transaction = new TransactionEntity();
+
+    transaction.accountId = params.accountId;
+    transaction.transactionType = params.transactionType;
+    transaction.transactionTypeId = params.transactionType.id;
+    transaction.status = TransactionStatus.PENDING;
+
+    transaction.amount = DEBIT_TYPES.has(params.transactionType.code)
+      ? -params.amount
+      : params.amount;
+
+    return transaction as TransactionEntity & {
+      transactionType: TransactionTypeEntity;
+    };
+  }
+
+  isDebit(): boolean {
+    return this.amount < 0;
+  }
+
+  isCoveredBy(balance: number): boolean {
+    return balance + this.amount >= 0;
+  }
+
+  complete(): void {
+    this.status = TransactionStatus.COMPLETED;
+  }
 }

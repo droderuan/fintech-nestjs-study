@@ -17,14 +17,14 @@ export class AccountsController {
   @Post()
   async create(@Body() dto: CreateAccountDto): Promise<AccountResponseDto> {
     const account = await this.accountsService.create(dto);
-    return AccountResponseDto.fromEntity(account);
+    return AccountResponseDto.fromEntity(account, 0);
   }
 
   @Get(':accountId')
   async findOne(
     @Param('accountId', ParseUUIDPipe) accountId: string,
   ): Promise<AccountResponseDto> {
-    const account = await this.accountsService.findById(accountId);
-    return AccountResponseDto.fromEntity(account);
+    const { account, amount } = await this.accountsService.findById(accountId);
+    return AccountResponseDto.fromEntity(account, amount);
   }
 }

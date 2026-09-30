@@ -19,7 +19,7 @@ export class TransactionResponseDto {
       transaction_id: transaction.id,
       account_id: transaction.accountId,
       type: transaction.transactionType.code,
-      amount: Number(transaction.amount),
+      amount: transaction.amount,
       status: transaction.status,
       event_date: transaction.createdAt,
     };

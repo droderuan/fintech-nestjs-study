@@ -15,10 +15,6 @@ export enum DocumentType {
 }
 
 @Entity('accounts')
-@Index('UQ_accounts_document_type_document', ['documentType', 'document'], {
-  unique: true,
-  where: '"deleted_at" IS NULL',
-})
 export class AccountEntity {
   @PrimaryColumn({ type: 'uuid', default: () => 'uuidv7()' })
   id: string;

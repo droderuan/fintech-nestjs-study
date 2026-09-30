@@ -1,47 +1,102 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
+import { DataSource } from 'typeorm';
 import {
   AccountRepository,
+  LedgerRepository,
   TransactionRepository,
-  TransactionType,
+  TransactionEntity,
 } from '../../infra/database/typeorm/models';
 import { CreateTransactionDto } from './dto/createTransaction.dto';
-
-// Purchases and withdrawals are registered with negative amounts.
-const DEBIT_TYPES = new Set<TransactionType>([
-  TransactionType.PURCHASE,
-  TransactionType.PURCHASE_WITH_INSTALLMENTS,
-  TransactionType.WITHDRAW,
-]);
 
 @Injectable()
 export class TransactionsService {
   constructor(
+    private readonly dataSource: DataSource,
     private readonly accountRepository: AccountRepository,
     private readonly transactionRepository: TransactionRepository,
+    private readonly ledgerRepository: LedgerRepository,
   ) {}
 
-  async create({ account_id, type, amount }: CreateTransactionDto) {
-    const account = await this.accountRepository.findById(account_id);
-    if (!account) {
-      throw new NotFoundException('Account not found');
-    }
+  create({ account_id, type, amount }: CreateTransactionDto) {
+    return this.dataSource.transaction(async (manager) => {
+      const account = await this.accountRepository.findByIdForTransaction(
+        account_id,
+        manager,
+      );
+      if (!account) {
+        throw new NotFoundException('Account not found');
+      }
 
-    const transactionType =
-      await this.transactionRepository.findTypeByCode(type);
-    if (!transactionType) {
-      throw new BadRequestException(`Unknown transaction type: ${type}`);
-    }
+      const systemAccount =
+        await this.accountRepository.findSystemAccount(manager);
 
-    const signedAmount = DEBIT_TYPES.has(type) ? -amount : amount;
+      if (!systemAccount) {
+        throw new InternalServerErrorException('System account not configured');
+      }
 
-    return this.transactionRepository.create({
-      accountId: account_id,
-      transactionType,
-      amount: signedAmount.toFixed(2),
+      if (systemAccount.id === account.id) {
+        throw new BadRequestException(
+          'Transactions cannot be created for the system account',
+        );
+      }
+
+      const transactionType = await this.transactionRepository.findTypeByCode(
+        type,
+        manager,
+      );
+
+      if (!transactionType) {
+        throw new BadRequestException(`Unknown transaction type: ${type}`);
+      }
+
+      const transaction = TransactionEntity.open({
+        accountId: account.id,
+        transactionType,
+        amount,
+      });
+
+      if (transaction.isDebit()) {
+        const balance = await this.ledgerRepository.getBalance(
+          account.id,
+          manager,
+        );
+        if (!transaction.isCoveredBy(balance)) {
+          throw new UnprocessableEntityException('Insufficient funds');
+        }
+      }
+
+      await this.transactionRepository.save(transaction, manager);
+
+      await this.ledgerRepository.createEntries(
+        [
+          {
+            accountId: account.id,
+            transactionId: transaction.id,
+            amount: transaction.amount,
+          },
+          {
+            accountId: systemAccount.id,
+            transactionId: transaction.id,
+            amount: -transaction.amount,
+          },
+        ],
+        manager,
+      );
+
+      transaction.complete();
+      await this.transactionRepository.updateStatus(
+        transaction.id,
+        transaction.status,
+        manager,
+      );
+
+      return transaction;
     });
   }
 }
