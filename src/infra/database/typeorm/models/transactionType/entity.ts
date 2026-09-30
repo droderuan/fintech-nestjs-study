@@ -7,6 +7,16 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
+// Mirrors the seeded transaction_types codes. The API refers to types by
+// code; ids are resolved from the table.
+export enum TransactionType {
+  PURCHASE = 'purchase',
+  PURCHASE_WITH_INSTALLMENTS = 'purchase_with_installments',
+  WITHDRAW = 'withdraw',
+  CREDIT_VOUCHER = 'credit_voucher',
+  DEPOSIT = 'deposit',
+}
+
 @Entity('transaction_types')
 export class TransactionTypeEntity {
   @PrimaryColumn({ type: 'smallint' })

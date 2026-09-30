@@ -5,18 +5,14 @@ import {
   AccountRepository,
   LedgerEntity,
   LedgerRepository,
+  SystemAccountEntity,
   TransactionEntity,
   TransactionRepository,
-  SystemAccountEntity,
-  SystemAccountRepository,
   TransactionTypeEntity,
-  TransactionTypeRepository,
 } from '../typeorm/models';
 
 const repositories = [
   AccountRepository,
-  TransactionTypeRepository,
-  SystemAccountRepository,
   TransactionRepository,
   LedgerRepository,
 ];
@@ -29,8 +25,8 @@ export class RepositoryModule {
       imports: [
         TypeOrmModule.forFeature([
           AccountEntity,
-          TransactionTypeEntity,
           SystemAccountEntity,
+          TransactionTypeEntity,
           TransactionEntity,
           LedgerEntity,
         ]),
