@@ -50,6 +50,10 @@ export class TransactionEntity {
   @Column({ type: 'bigint' })
   amount: number;
 
+  // Signed integer cents: sum of the customer's ledger entries for this transaction.
+  @Column({ type: 'bigint', default: 0 })
+  balance: number;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 
@@ -80,6 +84,8 @@ export class TransactionEntity {
     transaction.amount = DEBIT_TYPES.has(params.transactionType.code)
       ? -params.amount
       : params.amount;
+    // The ledger pair written with the transaction posts the full amount.
+    transaction.balance = transaction.amount;
 
     return transaction as TransactionEntity & {
       transactionType: TransactionTypeEntity;

@@ -64,6 +64,7 @@ Two layers under `src/`:
 - `ledgers` is append-only. Each transaction writes two entries that sum to zero: the customer's account gets `+amount`, and the **system account** gets `-amount`.
 - The system account is a regular `accounts` row referenced from `system_accounts` (enabled, not soft-deleted). The seed creates it with id `00000000-0000-7000-8000-000000000001`. Transactions against it are rejected.
 - `TransactionsService.create` runs everything in one `dataSource.transaction`: it validates the account, system account and type, checks funds for debits (`isCoveredBy`), saves the transaction as `PENDING`, writes the ledger pair, then marks it `COMPLETED`.
+- Bill payments (`POST /transactions/discharges`, `TransactionsService.transactionDischarge`) create no transaction. A debit's outstanding amount is `-SUM` of the customer's ledger entries for that transaction (`LedgerRepository.findOutstandingDebits`). Debits are settled oldest first by posting a new pair on the debit itself (`customer +x / system -x`); any amount beyond what is outstanding is not applied and is returned as `remaining_amount`.
 - Transaction types are a seeded lookup table (`transaction_types`, smallint ids). The API refers to them by `code`, which mirrors the `TransactionType` enum in `models/transactionType/entity.ts`. Keep the enum and `seed.sql` in sync.
 
 ### Schema conventions

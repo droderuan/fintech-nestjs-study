@@ -31,6 +31,8 @@ describe('TransactionsService', () => {
     findTypeByCode: ReturnType<typeof vi.fn>;
     save: ReturnType<typeof vi.fn>;
     updateStatus: ReturnType<typeof vi.fn>;
+    findOutstandingDebits: ReturnType<typeof vi.fn>;
+    addToBalance: ReturnType<typeof vi.fn>;
   };
   let ledgerRepository: {
     getBalance: ReturnType<typeof vi.fn>;
@@ -56,6 +58,8 @@ describe('TransactionsService', () => {
         Object.assign(transaction, { id: 'transaction-id' }),
       ),
       updateStatus: vi.fn(),
+      findOutstandingDebits: vi.fn().mockResolvedValue([]),
+      addToBalance: vi.fn(),
     };
     ledgerRepository = {
       getBalance: vi.fn().mockResolvedValue(10000),
@@ -89,6 +93,7 @@ describe('TransactionsService', () => {
           accountId: account.id,
           transactionTypeId: 1,
           amount: customerAmount,
+          balance: customerAmount,
         }),
         manager,
       );
@@ -185,5 +190,113 @@ describe('TransactionsService', () => {
       BadRequestException,
     );
     expect(transactionRepository.save).not.toHaveBeenCalled();
+  });
+
+  describe('transactionDischarge', () => {
+    const discharge = (amount: number) =>
+      service.transactionDischarge({ account_id: account.id, amount });
+
+    // Customer/system pair posted on a discharged debit.
+    const pair = (transactionId: string, paid: number) => [
+      { accountId: account.id, transactionId, amount: paid },
+      { accountId: systemAccount.id, transactionId, amount: -paid },
+    ];
+
+    it('should discharge debits oldest first on the existing transactions', async () => {
+      transactionRepository.findOutstandingDebits.mockResolvedValue([
+        { transactionId: 'purchase-1', outstanding: 1350 },
+        { transactionId: 'purchase-2', outstanding: 1870 },
+      ]);
+
+      const result = await discharge(10000);
+
+      expect(transactionRepository.findOutstandingDebits).toHaveBeenCalledWith(
+        account.id,
+        manager,
+      );
+      expect(ledgerRepository.createEntries).toHaveBeenCalledWith(
+        [...pair('purchase-1', 1350), ...pair('purchase-2', 1870)],
+        manager,
+      );
+      expect(transactionRepository.addToBalance).toHaveBeenCalledTimes(2);
+      expect(transactionRepository.addToBalance).toHaveBeenCalledWith(
+        'purchase-1',
+        1350,
+        manager,
+      );
+      expect(transactionRepository.addToBalance).toHaveBeenCalledWith(
+        'purchase-2',
+        1870,
+        manager,
+      );
+      expect(result).toEqual({
+        accountId: account.id,
+        amount: 10000,
+        remainingAmount: 6780,
+        discharged: [
+          { transactionId: 'purchase-1', amount: 1350 },
+          { transactionId: 'purchase-2', amount: 1870 },
+        ],
+      });
+    });
+
+    it('should not create transactions', async () => {
+      transactionRepository.findOutstandingDebits.mockResolvedValue([
+        { transactionId: 'purchase-1', outstanding: 1350 },
+      ]);
+
+      await discharge(1000);
+
+      expect(transactionRepository.save).not.toHaveBeenCalled();
+      expect(transactionRepository.updateStatus).not.toHaveBeenCalled();
+    });
+
+    it('should partially discharge a debit when the amount runs out', async () => {
+      transactionRepository.findOutstandingDebits.mockResolvedValue([
+        { transactionId: 'purchase-1', outstanding: 1350 },
+        { transactionId: 'purchase-2', outstanding: 1870 },
+        { transactionId: 'purchase-3', outstanding: 500 },
+      ]);
+
+      const result = await discharge(2000);
+
+      expect(ledgerRepository.createEntries).toHaveBeenCalledWith(
+        [...pair('purchase-1', 1350), ...pair('purchase-2', 650)],
+        manager,
+      );
+      expect(transactionRepository.addToBalance).toHaveBeenLastCalledWith(
+        'purchase-2',
+        650,
+        manager,
+      );
+      expect(transactionRepository.addToBalance).not.toHaveBeenCalledWith(
+        'purchase-3',
+        expect.anything(),
+        manager,
+      );
+      expect(result.remainingAmount).toBe(0);
+    });
+
+    it('should post nothing when no debit is outstanding', async () => {
+      const result = await discharge(5000);
+
+      expect(ledgerRepository.createEntries).not.toHaveBeenCalled();
+      expect(transactionRepository.addToBalance).not.toHaveBeenCalled();
+      expect(result).toMatchObject({ remainingAmount: 5000, discharged: [] });
+    });
+
+    it('should throw when the account does not exist', async () => {
+      accountRepository.findByIdForTransaction.mockResolvedValue(null);
+
+      await expect(discharge(1000)).rejects.toThrow(NotFoundException);
+      expect(ledgerRepository.createEntries).not.toHaveBeenCalled();
+    });
+
+    it('should reject discharges on the system account itself', async () => {
+      accountRepository.findByIdForTransaction.mockResolvedValue(systemAccount);
+
+      await expect(discharge(1000)).rejects.toThrow(BadRequestException);
+      expect(ledgerRepository.createEntries).not.toHaveBeenCalled();
+    });
   });
 });

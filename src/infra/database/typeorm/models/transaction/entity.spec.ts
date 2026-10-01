@@ -22,6 +22,7 @@ describe('TransactionEntity', () => {
     const transaction = open(code, 5010);
 
     expect(transaction.amount).toBe(amount);
+    expect(transaction.balance).toBe(amount);
     expect(transaction.isDebit()).toBe(isDebit);
     expect(transaction.status).toBe(TransactionStatus.PENDING);
     expect(transaction.transactionTypeId).toBe(1);

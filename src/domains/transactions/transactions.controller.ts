@@ -9,6 +9,8 @@ import {
 } from '@nestjs/swagger';
 import { TransactionsService } from './transactions.service';
 import { CreateTransactionDto } from './dto/createTransaction.dto';
+import { DischargeResponseDto } from './dto/dischargeResponse.dto';
+import { DischargeTransactionDto } from './dto/dischargeTransaction.dto';
 import { TransactionResponseDto } from './dto/transactionResponse.dto';
 
 @ApiTags('transactions')
@@ -33,5 +35,23 @@ export class TransactionsController {
   ): Promise<TransactionResponseDto> {
     const transaction = await this.transactionsService.create(dto);
     return TransactionResponseDto.fromEntity(transaction);
+  }
+
+  @Post('discharges')
+  @ApiOperation({
+    summary: 'Pay the card bill',
+    description:
+      'Discharges the account debits from oldest to newest by posting ledger entries on the existing transactions. Any amount beyond what is outstanding is not applied and is returned as remaining_amount.',
+  })
+  @ApiCreatedResponse({ type: DischargeResponseDto })
+  @ApiBadRequestResponse({
+    description: 'Invalid payload or system account',
+  })
+  @ApiNotFoundResponse({ description: 'Account not found' })
+  async discharge(
+    @Body() dto: DischargeTransactionDto,
+  ): Promise<DischargeResponseDto> {
+    const discharge = await this.transactionsService.transactionDischarge(dto);
+    return DischargeResponseDto.fromDischarge(discharge);
   }
 }

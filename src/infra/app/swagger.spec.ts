@@ -37,15 +37,16 @@ describe('buildSwaggerDocument', () => {
     expect(document.info.version).toMatch(/^\d+\.\d+\.\d+$/);
   });
 
-  it('documents exactly the three API endpoints', () => {
-    const operations = Object.entries(document.paths).flatMap(
-      ([path, item]) => Object.keys(item).map((method) => `${method} ${path}`),
+  it('documents exactly the four API endpoints', () => {
+    const operations = Object.entries(document.paths).flatMap(([path, item]) =>
+      Object.keys(item).map((method) => `${method} ${path}`),
     );
 
     expect(operations.sort()).toEqual([
       'get /accounts/{accountId}',
       'post /accounts',
       'post /transactions',
+      'post /transactions/discharges',
     ]);
   });
 
@@ -80,6 +81,17 @@ describe('buildSwaggerDocument', () => {
       '400',
       '404',
       '422',
+    ]);
+  });
+
+  it('documents the discharge responses', () => {
+    const operation = document.paths['/transactions/discharges'].post!;
+
+    expect(operation.tags).toEqual(['transactions']);
+    expect(Object.keys(operation.responses).sort()).toEqual([
+      '201',
+      '400',
+      '404',
     ]);
   });
 });

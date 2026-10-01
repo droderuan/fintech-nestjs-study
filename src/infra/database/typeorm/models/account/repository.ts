@@ -14,9 +14,11 @@ export class AccountRepository extends BaseRepository<AccountEntity> {
     return this.repository.findOne({ where: { id } });
   }
 
+  // Row lock: serializes balance checks and discharges on the same account.
   findByIdForTransaction(id: string, manager: EntityManager) {
     return this.repo(manager).findOne({
       where: { id },
+      lock: { mode: 'pessimistic_write' },
     });
   }
 
